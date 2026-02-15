@@ -52,8 +52,14 @@ export function HomeSidebar({
                 isActive && "bg-accent",
               )}
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-sm shrink-0">
-                {other.is_bot ? "🤖" : displayName[0]?.toUpperCase()}
+              {/* Avatar with online indicator */}
+              <div className="relative shrink-0">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-sm">
+                  {other.is_bot ? "🤖" : displayName[0]?.toUpperCase()}
+                </div>
+                {other.is_online && (
+                  <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-card" />
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-foreground text-sm truncate">

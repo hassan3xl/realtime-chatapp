@@ -1,18 +1,85 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { HomeSidebar } from "@/components/sidebar/HomeSidebar";
 import ChatWindow from "@/components/chats/ChatWindow";
 import HomeNav from "@/components/navbar/HomeNav";
 import { BottomSidebar } from "@/components/sidebar/BottomSidebar";
 import AppShell from "@/components/AppShell";
 import { getThreads, type Thread } from "@/lib/api";
+import {
+  useSocket,
+  type WsNewMessage,
+  type WsUserStatus,
+} from "@/lib/useSocket";
+import { useAuth } from "@/lib/AuthContext";
 import { Loader2 } from "lucide-react";
 
 export default function Home() {
+  const { user } = useAuth();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [activeThread, setActiveThread] = useState<Thread | null>(null);
   const [loading, setLoading] = useState(true);
+  const [incomingMessage, setIncomingMessage] = useState<
+    WsNewMessage["data"] | null
+  >(null);
+  const activeThreadRef = useRef(activeThread);
+  activeThreadRef.current = activeThread;
+
+  // ─── WebSocket callbacks ──────────────────────────────────────────
+
+  const handleWsMessage = useCallback(
+    (event: WsNewMessage) => {
+      const msg = event.data;
+
+      // Skip messages sent by ourselves (already added via REST response)
+      if (msg.user.id === user?.id) {
+        // Still refresh thread list for ordering
+        getThreads().then(setThreads).catch(console.error);
+        return;
+      }
+
+      // Push the incoming message to ChatWindow if it's for the active thread
+      setIncomingMessage(msg);
+
+      // Refresh thread list to update last_message + ordering
+      getThreads().then(setThreads).catch(console.error);
+    },
+    [user?.id],
+  );
+
+  const handleStatusChange = useCallback((event: WsUserStatus) => {
+    const { user_id, is_online, last_seen } = event.data;
+
+    // Update the other_user status in threads
+    setThreads((prev) =>
+      prev.map((t) =>
+        t.other_user.id === user_id
+          ? {
+              ...t,
+              other_user: { ...t.other_user, is_online, last_seen },
+            }
+          : t,
+      ),
+    );
+
+    // Also update active thread if it matches
+    setActiveThread((prev) =>
+      prev && prev.other_user.id === user_id
+        ? {
+            ...prev,
+            other_user: { ...prev.other_user, is_online, last_seen },
+          }
+        : prev,
+    );
+  }, []);
+
+  const { connected, sendWsMessage } = useSocket({
+    onMessage: handleWsMessage,
+    onStatusChange: handleStatusChange,
+  });
+
+  // ─── Initial thread fetch ─────────────────────────────────────────
 
   useEffect(() => {
     getThreads()
@@ -31,7 +98,7 @@ export default function Home() {
   return (
     <AppShell>
       <div className="flex h-[calc(100vh-64px)]">
-        {/* Desktop sidebar: always visible from md and up */}
+        {/* Desktop sidebar */}
         <div className="hidden md:flex">
           <HomeSidebar
             threads={threads}
@@ -43,11 +110,10 @@ export default function Home() {
 
         {/* Main area */}
         <div className="flex-1 flex flex-col">
-          {/* MOBILE: show thread list when no active thread */}
+          {/* MOBILE: thread list when no active thread */}
           {!activeThread && (
             <div className="md:hidden overflow-y-auto">
               <HomeNav />
-
               {loading && (
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -69,7 +135,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* Chat window (desktop or mobile when a thread is selected) */}
           {activeThread === null && <BottomSidebar />}
 
           {activeThread ? (
@@ -77,6 +142,9 @@ export default function Home() {
               thread={activeThread}
               onBack={handleBack}
               onMessageSent={refreshThreads}
+              sendWsMessage={sendWsMessage}
+              incomingMessage={incomingMessage}
+              onIncomingConsumed={() => setIncomingMessage(null)}
             />
           ) : (
             <div className="hidden md:flex flex-1 items-center justify-center text-muted-foreground">
@@ -111,9 +179,14 @@ function ThreadItem({
         active ? "bg-accent" : ""
       }`}
     >
-      {/* Avatar */}
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-lg shrink-0">
-        {other.is_bot ? "🤖" : displayName[0]?.toUpperCase()}
+      {/* Avatar with online indicator */}
+      <div className="relative shrink-0">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-lg">
+          {other.is_bot ? "🤖" : displayName[0]?.toUpperCase()}
+        </div>
+        {other.is_online && (
+          <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-card" />
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <p className="font-semibold text-foreground truncate">{displayName}</p>

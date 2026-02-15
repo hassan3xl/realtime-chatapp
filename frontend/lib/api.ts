@@ -28,6 +28,8 @@ export interface ChatUser {
   username: string;
   display_name: string;
   is_bot: boolean;
+  is_online: boolean;
+  last_seen: string | null;
 }
 
 export interface LastMessage {

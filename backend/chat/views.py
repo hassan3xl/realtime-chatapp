@@ -4,6 +4,8 @@ from rest_framework import status
 from django.db.models import Q
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 from core.authentication import CsrfExemptSessionAuthentication
 from .models.chats import Thread, ChatMessage
@@ -112,4 +114,41 @@ class MessageListView(APIView):
         thread.save()
 
         serializer = ChatMessageSerializer(msg)
+        
+        # Broadcast to channel layer
+        channel_layer = get_channel_layer()
+        serialized_data = {
+            "id": msg.id,
+            "thread_id": thread.id,
+            "user": {
+                "id": request.user.id,
+                "username": request.user.username,
+                "display_name": request.user.display_name,
+                "is_bot": request.user.is_bot,
+                "is_online": True, # Sender is online by definition
+                "last_seen": None,
+            },
+            "message": msg.message,
+            "timestamp": msg.timestamp.isoformat(),
+        }
+        
+        # Send to other user
+        other_user = thread.second_person if thread.first_person == request.user else thread.first_person
+        async_to_sync(channel_layer.group_send)(
+            f"user_{other_user.id}",
+            {
+                "type": "chat.message",
+                "data": serialized_data,
+            },
+        )
+        
+        # Send to sender (so they see it update instantly on other devices/tabs)
+        async_to_sync(channel_layer.group_send)(
+            f"user_{request.user.id}",
+            {
+                "type": "chat.message",
+                "data": serialized_data,
+            },
+        )
+
         return Response(serializer.data, status=status.HTTP_201_CREATED)

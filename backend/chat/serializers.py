@@ -7,10 +7,23 @@ User = get_user_model()
 
 class ChatUserSerializer(serializers.ModelSerializer):
     """Lightweight user serializer for chat contexts."""
+    is_online = serializers.SerializerMethodField()
+    last_seen = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ('id', 'username', 'display_name', 'is_bot')
+        fields = ('id', 'username', 'display_name', 'is_bot', 'is_online', 'last_seen')
         read_only_fields = fields
+
+    def get_is_online(self, obj):
+        profile = getattr(obj, 'profile', None)
+        return profile.is_online if profile else False
+
+    def get_last_seen(self, obj):
+        profile = getattr(obj, 'profile', None)
+        if profile and profile.last_seen:
+            return profile.last_seen.isoformat()
+        return None
 
 
 class ChatMessageSerializer(serializers.ModelSerializer):
