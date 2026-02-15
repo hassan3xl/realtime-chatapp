@@ -1,46 +1,40 @@
 "use client";
 
 import { ChevronLeft, Phone, Video } from "lucide-react";
-import { useRouter } from "next/navigation";
 import React from "react";
+import type { ChatUser } from "@/lib/api";
 
 interface ChatHeaderProps {
-  user: any;
+  user: ChatUser;
   onBack?: () => void;
 }
 
 const ChatsHeader = ({ user, onBack }: ChatHeaderProps) => {
-  const router = useRouter();
-  const viewUser = () => {
-    router.push(`/users/${user.id}`);
-  };
+  const displayName = user.display_name || user.username;
 
   return (
-    <div className="flex items-center justify-between border-b border-border px-4 py-[10px] rounded-md">
-      <div className="flex">
+    <div className="flex items-center justify-between border-b border-border px-4 py-3 rounded-md">
+      <div className="flex items-center gap-3">
         {onBack && (
           <button
             onClick={onBack}
-            className="md:hidden mr-2 text-sm text-muted-foreground hover:text-foreground"
+            className="md:hidden text-muted-foreground hover:text-foreground transition"
           >
             <ChevronLeft size={20} />
           </button>
         )}
-        <div
-          className="flex cursor-pointer items-center gap-3"
-          onClick={viewUser}
-        >
-          <img
-            src={user.image}
-            alt={user.name}
-            className="w-10 h-10 rounded-full"
-          />
-          <div>
-            <p className="font-semibold text-foreground">{user.name}</p>
-            <p className="text-sm text-muted-foreground">{user.username}</p>
-          </div>
+
+        {/* Avatar */}
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-sm shrink-0">
+          {user.is_bot ? "🤖" : displayName[0]?.toUpperCase()}
+        </div>
+
+        <div>
+          <p className="font-semibold text-foreground">{displayName}</p>
+          <p className="text-sm text-muted-foreground">@{user.username}</p>
         </div>
       </div>
+
       <div className="flex gap-4 text-muted-foreground">
         <Video
           size={20}

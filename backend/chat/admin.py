@@ -1,10 +1,15 @@
 from django.contrib import admin
 from .models.chats import Thread, ChatMessage
 
+class ChatMessageInline(admin.TabularInline):
+    model = ChatMessage
+    extra = 1 # Number of empty forms to display
+
 @admin.register(Thread)
 class ThreadAdmin(admin.ModelAdmin):
     list_display = ('id', 'first_person', 'second_person', 'updated')
     search_fields = ('first_person__username', 'second_person__username')
+    inlines = [ChatMessageInline] # Add this line
 
 @admin.register(ChatMessage)
 class ChatMessageAdmin(admin.ModelAdmin):

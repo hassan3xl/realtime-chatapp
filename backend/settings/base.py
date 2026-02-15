@@ -118,7 +118,12 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
 ]
 
 # Allow session cookie to be sent cross-origin during development
 CORS_ALLOW_CREDENTIALS = True
+
+# Allow JavaScript to access the CSRF cookie for cross-origin requests
+CSRF_COOKIE_HTTPONLY = False

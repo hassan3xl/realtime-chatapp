@@ -1,14 +1,16 @@
-const API_BASE = "http://localhost:8000/api/auth";
+const API_BASE = "http://localhost:8000/api";
 
-interface ApiUser {
+// ─── Types ───────────────────────────────────────────────────────────
+
+export interface ApiUser {
   id: number;
   username: string;
-  phone_number: string;
+  phone_number?: string;
   display_name: string;
   is_bot: boolean;
 }
 
-interface RegisterPayload {
+export interface RegisterPayload {
   username: string;
   phone_number: string;
   display_name?: string;
@@ -16,10 +18,39 @@ interface RegisterPayload {
   password2: string;
 }
 
-interface LoginPayload {
+export interface LoginPayload {
   identifier: string;
   password: string;
 }
+
+export interface ChatUser {
+  id: number;
+  username: string;
+  display_name: string;
+  is_bot: boolean;
+}
+
+export interface LastMessage {
+  message: string;
+  timestamp: string;
+  user_id: number;
+}
+
+export interface Thread {
+  id: number;
+  other_user: ChatUser;
+  last_message: LastMessage | null;
+  updated: string;
+}
+
+export interface Message {
+  id: number;
+  user: ChatUser;
+  message: string;
+  timestamp: string;
+}
+
+// ─── Fetch helper ────────────────────────────────────────────────────
 
 async function request<T>(
   endpoint: string,
@@ -34,7 +65,6 @@ async function request<T>(
   const data = await res.json().catch(() => null);
 
   if (!res.ok) {
-    // Try to extract the best error message from DRF responses
     const message =
       (data && typeof data === "object" && !Array.isArray(data)
         ? Object.values(data).flat().join(" ")
@@ -45,26 +75,52 @@ async function request<T>(
   return data as T;
 }
 
+// ─── Auth ────────────────────────────────────────────────────────────
+
 export async function register(payload: RegisterPayload) {
-  return request<{ detail: string; user: ApiUser }>("/register/", {
+  return request<{ detail: string; user: ApiUser }>("/auth/register/", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
 export async function login(payload: LoginPayload) {
-  return request<{ detail: string; user: ApiUser }>("/login/", {
+  return request<{ detail: string; user: ApiUser }>("/auth/login/", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
 export async function logout() {
-  return request<{ detail: string }>("/logout/", { method: "POST" });
+  return request<{ detail: string }>("/auth/logout/", { method: "POST" });
 }
 
 export async function getMe() {
-  return request<ApiUser>("/me/");
+  return request<ApiUser>("/auth/me/");
 }
 
-export type { ApiUser, RegisterPayload, LoginPayload };
+// ─── Threads ─────────────────────────────────────────────────────────
+
+export async function getThreads() {
+  return request<Thread[]>("/chat/threads/");
+}
+
+export async function createThread(userId: number) {
+  return request<Thread>("/chat/threads/", {
+    method: "POST",
+    body: JSON.stringify({ user_id: userId }),
+  });
+}
+
+// ─── Messages ────────────────────────────────────────────────────────
+
+export async function getMessages(threadId: number) {
+  return request<Message[]>(`/chat/threads/${threadId}/messages/`);
+}
+
+export async function sendMessage(threadId: number, message: string) {
+  return request<Message>(`/chat/threads/${threadId}/messages/`, {
+    method: "POST",
+    body: JSON.stringify({ message }),
+  });
+}
