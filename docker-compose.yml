@@ -1,0 +1,25 @@
+services:
+  backend:
+    build: ./backend
+    user: "1000:1000"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app/backend
+    environment:
+      - DJANGO_SETTINGS_MODULE=settings.dev
+    command: python manage.py runserver 0.0.0.0:8000
+
+  frontend:
+    build: ./frontend
+    user: "1000:1000"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+    env_file:
+      - ./frontend/.env.local
+    depends_on:
+      - backend
+    command: npm run dev
