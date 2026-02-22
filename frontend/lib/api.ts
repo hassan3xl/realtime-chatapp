@@ -3,11 +3,13 @@ const API_BASE = "http://localhost:8000/api";
 // ─── Types ───────────────────────────────────────────────────────────
 
 export interface ApiUser {
-  id: number;
+  id: string;
   username: string;
   phone_number?: string;
   display_name: string;
   is_bot: boolean;
+  bio?: string;
+  avatar?: string;
 }
 
 export interface RegisterPayload {
@@ -39,16 +41,17 @@ export interface LastMessage {
 }
 
 export interface Thread {
-  id: number;
-  other_user: ChatUser;
+  id: string;
+  first_person: number;
+  second_person: number;
   last_message: LastMessage | null;
   updated: string;
 }
 
 export interface Message {
-  id: number;
-  user: ChatUser;
-  message: string;
+  id: string;
+  user: ApiUser;
+  sender_email: string | null;
   timestamp: string;
 }
 
@@ -99,6 +102,24 @@ export async function logout() {
 
 export async function getMe() {
   return request<ApiUser>("/auth/me/");
+}
+
+export async function searchUsers(query: string) {
+  return request<ApiUser[]>(`/auth/search/?q=${encodeURIComponent(query)}`);
+}
+
+export async function updateProfile(data: FormData) {
+  // Use FormData for file upload support
+  const res = await fetch(`${API_BASE}/auth/me/`, {
+    method: "PATCH",
+    body: data,
+    credentials: "include",
+    // Content-Type header not set manually for FormData, browser sets it with boundary
+  });
+  if (!res.ok) {
+    throw new Error("Failed to update profile");
+  }
+  return res.json() as Promise<ApiUser>;
 }
 
 // ─── Threads ─────────────────────────────────────────────────────────

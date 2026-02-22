@@ -95,6 +95,14 @@ export default function Home() {
     setThreads(updated);
   };
 
+  const handleThreadCreated = (newThread: Thread) => {
+    setThreads((prev) => {
+      if (prev.find((t) => t.id === newThread.id)) return prev;
+      return [newThread, ...prev];
+    });
+    setActiveThread(newThread);
+  };
+
   return (
     <AppShell>
       <div className="flex h-[calc(100vh-64px)]">
@@ -105,6 +113,7 @@ export default function Home() {
             loading={loading}
             onSelectThread={setActiveThread}
             activeThread={activeThread}
+            onThreadCreated={handleThreadCreated}
           />
         </div>
 
@@ -175,7 +184,7 @@ function ThreadItem({
   return (
     <div
       onClick={() => onSelect(thread)}
-      className={`flex items-center gap-3 cursor-pointer border-t border-border hover:bg-accent p-4 rounded-md transition ${
+      className={`flex items-center gap-3 cursor-pointer hover:bg-accent p-4 rounded-md transition ${
         active ? "bg-accent" : ""
       }`}
     >

@@ -10,6 +10,7 @@ interface HomeSidebarProps {
   loading: boolean;
   onSelectThread: (thread: Thread) => void;
   activeThread: Thread | null;
+  onThreadCreated?: (thread: Thread) => void;
 }
 
 export function HomeSidebar({
@@ -17,11 +18,12 @@ export function HomeSidebar({
   loading,
   onSelectThread,
   activeThread,
+  onThreadCreated,
 }: HomeSidebarProps) {
   return (
     <div className={cn("hidden md:flex flex-col w-72 h-full px-2 bg-card")}>
       <div>
-        <HomeNav />
+        <HomeNav onThreadCreated={onThreadCreated} />
       </div>
 
       <div className="flex-1 overflow-y-auto pt-2 w-full">

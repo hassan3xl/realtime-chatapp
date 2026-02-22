@@ -15,7 +15,11 @@ import Link from "next/link";
 import React from "react";
 import { useAuth } from "@/lib/AuthContext";
 
-const HomeNav = () => {
+interface HomeNavProps {
+  onThreadCreated?: (thread: any) => void;
+}
+
+const HomeNav = ({ onThreadCreated }: HomeNavProps) => {
   const [showOptions, setShowOptions] = React.useState(false);
   const [showAddUser, setShowAddUser] = React.useState(false);
   const { logout } = useAuth();
@@ -65,13 +69,16 @@ const HomeNav = () => {
                   onClick={() => setShowAddUser(false)}
                   className="fixed inset-0 bg-black/40 z-40"
                 ></div>
-                <AddUserToChatsModal onClose={closeModal} />
+                <AddUserToChatsModal
+                  onClose={closeModal}
+                  onThreadCreated={onThreadCreated}
+                />
               </>
             )}
           </span>
 
           {/* More Options */}
-          <span
+          {/* <span
             className="hover:bg-accent rounded-md p-1 relative"
             onClick={(e) => {
               e.stopPropagation();
@@ -108,7 +115,7 @@ const HomeNav = () => {
                 </button>
               </div>
             )}
-          </span>
+          </span> */}
         </div>
       </div>
       <div className="flex gap-2 h-16 items-center justify-center">
@@ -121,7 +128,7 @@ const HomeNav = () => {
           <SearchIcon />
         </button>
       </div>
-      <div className="flex mt-2 gap-2 justify-between px-4 text-muted-foreground">
+      {/* <div className="flex my-2 gap-2 justify-between px-4 text-muted-foreground">
         <span className="hover:text-foreground transition cursor-pointer">
           <MessageCircleCode />
         </span>
@@ -134,7 +141,7 @@ const HomeNav = () => {
         <span className="hover:text-foreground transition cursor-pointer">
           <Users />
         </span>
-      </div>
+      </div> */}
     </>
   );
 };
